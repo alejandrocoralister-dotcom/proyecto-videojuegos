@@ -1,170 +1,43 @@
 // ELEMENTOS DEL DOM
 const gamesContainer = document.getElementById("gamesContainer");
-const loading = document.getElementById("loading");
-const errorMessage = document.getElementById("errorMessage");
-const searchInput = document.getElementById("searchInput");
-const searchBtn = document.getElementById("searchBtn");
-const storeFilter = document.getElementById("storeFilter");
-const priceOrder = document.getElementById("priceOrder");
+const loading = document.getElementById("loading") || null;
+const errorMessage = document.getElementById("errorMessage") || null;
 
-// ELEMENTOS DEL MODAL
-const modal = document.getElementById("gameModal");
-const modalContent = document.getElementById("modalContent");
-const closeModal = document.getElementById("closeModal");
+// API BASE – carga 12 juegos por defecto
+const API_URL = "https://www.cheapshark.com/api/1.0/deals?pageSize=12";
 
-// ENDPOINT BASE
-const API_BASE = "https://www.cheapshark.com/api/1.0/deals?pageSize=12";
-
-
-// =========================================================
-// CARGAR JUEGOS
-// =========================================================
-async function cargarJuegos(url = API_BASE) {
+// FUNCIÓN PRINCIPAL PARA CARGAR JUEGOS
+async function cargarJuegos() {
     try {
-        loading.classList.remove("hidden");
-        errorMessage.classList.add("hidden");
+        if (loading) loading.classList.remove("hidden");
+        if (errorMessage) errorMessage.classList.add("hidden");
 
-        const res = await fetch(url);
-        const juegos = await res.json();
+        const respuesta = await fetch(API_URL);
+        const juegos = await respuesta.json();
 
         gamesContainer.innerHTML = "";
 
         juegos.forEach(juego => {
-            const card = crearTarjeta(juego);
+            const card = document.createElement("div");
+            card.className = "bg-white shadow-md rounded p-4";
+
+            card.innerHTML = `
+                <img src="${juego.thumb}" class="w-full h-40 object-cover rounded"/>
+                <h3 class="text-xl font-semibold mt-3">${juego.title}</h3>
+                <p class="line-through text-gray-500">Precio normal: $${juego.normalPrice}</p>
+                <p class="text-green-600 font-bold">Oferta: $${juego.salePrice}</p>
+            `;
+
             gamesContainer.appendChild(card);
         });
 
     } catch (error) {
-        console.error("Error API:", error);
-        errorMessage.classList.remove("hidden");
+        console.error(error);
+        if (errorMessage) errorMessage.classList.remove("hidden");
     } finally {
-        loading.classList.add("hidden");
+        if (loading) loading.classList.add("hidden");
     }
 }
 
-
-// =========================================================
-// TARJETA DEL VIDEOJUEGO
-// =========================================================
-function crearTarjeta(juego) {
-    const div = document.createElement("div");
-    div.className = "bg-white shadow-lg rounded-lg p-4";
-
-    div.innerHTML = `
-        <img src="${juego.thumb}" class="w-full h-40 object-cover rounded-md" />
-        
-        <h3 class="text-xl font-semibold mt-3">${juego.title}</h3>
-
-        <p class="text-gray-500 line-through text-sm">
-            Precio normal: $${juego.normalPrice}
-        </p>
-
-        <p class="text-green-600 font-bold text-lg">
-            Oferta: $${juego.salePrice}
-        </p>
-
-        <button onclick="verDetalle('${juego.gameID}')"
-            class="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-            Ver detalle
-        </button>
-    `;
-
-    return div;
-}
-
-
-// =========================================================
-// FUNCIÓN PARA VER DETALLE (MODAL)
-// =========================================================
-async function verDetalle(id) {
-    modal.classList.remove("hidden");
-
-    modalContent.innerHTML = `
-        <p class="text-center text-gray-600">Cargando detalles...</p>
-    `;
-
-    const url = `https://www.cheapshark.com/api/1.0/games?id=${id}`;
-    const res = await fetch(url);
-    const data = await res.json();
-
-    const info = data.info;
-    const cheapest = data.deals[0];
-
-    modalContent.innerHTML = `
-        <img src="${info.thumb}" class="w-full rounded mb-3"/>
-
-        <h2 class="text-2xl font-bold mb-2">${info.title}</h2>
-
-        <p><strong>Precio más barato:</strong> $${cheapest.price}</p>
-        <p><strong>Rating Steam:</strong> ${info.steamRatingText || "N/A"}</p>
-        <p><strong>Desarrollador:</strong> ${info.developer}</p>
-        <p><strong>Publisher:</strong> ${info.publisher}</p>
-        <p><strong>Lanzado en:</strong> ${info.releaseDate ? new Date(info.releaseDate * 1000).toLocaleDateString() : "N/D"}</p>
-    `;
-}
-
-
-// =========================================================
-// CERRAR MODAL
-// =========================================================
-closeModal.addEventListener("click", () => {
-    modal.classList.add("hidden");
-});
-
-
-// =========================================================
-// BUSCADOR
-// =========================================================
-searchBtn.addEventListener("click", () => {
-    const texto = searchInput.value.trim();
-
-    if (texto === "") {
-        cargarJuegos(API_BASE);
-        return;
-    }
-
-    const url = `${API_BASE}&title=${texto}`;
-    cargarJuegos(url);
-});
-
-
-// =========================================================
-// FILTRO POR TIENDA
-// =========================================================
-storeFilter.addEventListener("change", () => {
-    const storeID = storeFilter.value;
-
-    let url = API_BASE;
-
-    if (storeID !== "") {
-        url = `${API_BASE}&storeID=${storeID}`;
-    }
-
-    cargarJuegos(url);
-});
-
-
-// =========================================================
-// ORDENAMIENTO POR PRECIO
-// =========================================================
-priceOrder.addEventListener("change", () => {
-    const order = priceOrder.value;
-
-    let url = API_BASE;
-
-    if (order === "asc") {
-        url = `${API_BASE}&sortBy=price`;
-    }
-
-    if (order === "desc") {
-        url = `${API_BASE}&sortBy=price&desc=1`;
-    }
-
-    cargarJuegos(url);
-});
-
-
-// =========================================================
-// CARGA INICIAL
-// =========================================================
-cargarJuegos(API_BASE);
+// CARGAR JUEGOS AL INICIO
+cargarJuegos();
